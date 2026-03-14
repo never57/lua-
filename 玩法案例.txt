@@ -1,0 +1,116 @@
+玩法案例
+
+
+案例1：首先我们在开始游戏时，给玩家添加一个随机道具，并且每过3秒换一个新道具，并且输出屏幕信息告诉玩家获得了什么道具。
+-- 修正版随机道具系统（带屏幕提示）
+do
+    -- 定义随机道具列表（文档5）
+    local randomProps = {
+        {id = 1106025000000000, name = "烟花火箭"},
+        {id = 1106022000000000, name = "尖叫鸭"},
+        {id = 1106039000000145, name = "魔方"},
+        {id = 1106009000000001, name = "路障"},
+        {id = 1106039000000146, name = "撑杆"},
+        {id = 1106039000000147, name = "滑翔翼"},
+        {id = 1106039000000011, name = "雪人炸弹"},
+        {id = 1106006000000000, name = "云朵"},
+        {id = 1106014000000000, name = "回旋镖"},
+        {id = 1106002000000000, name = "香蕉皮"}
+    }
+    -- 获取本地玩家ID
+    local player_Id = Character:GetLocalPlayerId()
+    -- 添加随机道具的函数
+    local function addRandomProp()
+        -- 移除当前道具
+        Character:RemoveProp(player_Id)
+        -- 随机选择新道具
+        local prop = randomProps[math.random(#randomProps)]
+        -- 添加新道具
+        Character:AddProp(player_Id, prop.id)
+        -- 在屏幕中央显示道具名称提示（文档4）
+        UI:ShowMessageTip("★ 获得道具: "..prop.name)
+    end
+    -- 初始添加道具
+    addRandomProp()
+    -- 设置3秒定时器循环更换道具（文档5）
+    TimerManager:AddLoopTimer(3.0, function()
+        addRandomProp()
+    end)
+end
+
+案例2：怪物生成
+现在我们来实现，玩家进入信号触发盒就在场景中复制一只怪物
+--注册监听事件
+System:RegisterEvent(
+--事件类型：当角色进入信号触发盒
+Events.ON_CHARACTER_ENTER_SIGNAL_BOX,
+--事件回调函数
+function (playerId, signalBoxId) --playerId = 玩家id, signalBoxId = 信号触发盒id
+  --在这里编写事件逻辑
+  printLog("ON_CHARACTER_ENTER_SIGNAL_BOX", playerId, signalBoxId)
+  if signalBoxId== box_trigger then
+    --复制场景中的生物，创建一个生物
+    Creature:SpawnCreatureBySceneID(monster_id, Engine.Vector(0, 0, 100), Engine.Vector(0, 0, 0))
+  end
+  --事件逻辑结束
+end)
+
+
+案例3：定时补充道具
+定时补充道具
+尖叫鸭的使用次数是有限的，如果我们想定时补充道具，就需要用到定时器的API
+--添加一个循环触发定时器
+TimerManager:AddLoopTimer(delay_time,
+function()
+    --在这里编写定时器逻辑
+    --给玩家添加道具
+    Character:AddProp(player_Id,prop_Id)
+    --定时器逻辑结束
+end,delay_time)
+
+案例4：怪物行为
+怪物行为
+怪物呆呆的站在那边会不会太傻了？ 我们可以让怪物朝着玩家移动
+--复制场景中的生物，创建一个生物
+--保存新创建的怪物实例ID
+local monster=Creature:SpawnCreatureBySceneID(monster_id, Engine.Vector(0, 0, 100), Engine.Vector(0, 0, 0))
+--让怪物跟随玩家
+Creature:CreatureSwitchBehaviorToFollowPlayer(monster, player_Id, 9999, 5, 20)
+
+案例5：攻击特效
+攻击特效
+直接攻击怪物显得有些单调，我们给击打加个特效吧。
+
+--注册监听事件
+System:RegisterEvent(
+--事件类型：当生物受到伤害前
+Events.ON_BEFORE_CREATURE_TAKING_DAMAGE,
+--事件回调函数
+function (creatureId, killer, damage) -- creatureId = 生物ID, killer = 发出伤害的ID, damage = 伤害的数值
+    --在这里编写事件逻辑
+    printLog("打中怪物了！")
+    --获取怪物位置
+    local pos = Creature:GetPosition(creatureId)
+    --特效的大小
+    local effect_size=0.3
+    --在怪物的位置播放特效
+    local effectId = Particle:PlayAtPosition(effect_type_id, pos, effect_size, true, 1)
+end)
+
+案例6：计分器
+计分器
+想知道一共打中了怪物多少次，我们可以制作一个UI记分器
+
+--控件实例ID，用于做计分器
+local ui_socre=101350
+--用于记录分数
+local socre=0
+
+--分数加1
+socre = socre + 1
+--拼接显示的文字
+local socre_string='当前分数为'..tostring(socre)
+--同步修改控件文本
+UI:SetText({ui_socre},socre_string)
+--日志打印到控制台
+print(socre_string)
